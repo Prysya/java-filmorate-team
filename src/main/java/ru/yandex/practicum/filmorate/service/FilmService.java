@@ -9,7 +9,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
-import java.util.Collection;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -66,5 +66,47 @@ public class FilmService {
         if (FilmValidator.isFilmNull(film)) {
             throw new NotFoundException(String.format(NOT_FOUND_FILM, id));
         }
+    }
+
+    public Collection<Film> getRecommendations(Integer userId) {
+        Map<Integer, Set<Integer>> likes = likeService.getLikes();
+        Set<Integer> filmIds = new HashSet<>();
+
+        for (Map.Entry<Integer, Set<Integer>> entry : getLikesCollaborations(likes, userId).entrySet()) {
+            Set<Integer> otherUserFilms = entry.getValue();
+            otherUserFilms.removeAll(likes.get(userId));
+            filmIds.addAll(otherUserFilms);
+        }
+
+        return filmIds.size() > 0 ? filmStorage.getAllFilms(filmIds) : new ArrayList<>();
+    }
+
+    private Map<Integer, Set<Integer>> getLikesCollaborations(Map<Integer, Set<Integer>> likes, Integer userId) {
+        Map<Integer, Set<Integer>> result = new HashMap<>();
+        Set<Integer> userLikedFilms = likes.get(userId);
+        Set<Integer> collaborations = new HashSet<>();
+
+        for (Map.Entry<Integer, Set<Integer>> likesEntry : likes.entrySet()) {
+            Integer key = likesEntry.getKey();
+            Set<Integer> value = likesEntry.getValue();
+
+            if (key.equals(userId)) {
+                continue;
+            }
+
+            if (value.size() > collaborations.size()) {
+                collaborations = value;
+
+                Set<Integer> collaborationsCopy = new HashSet<>(collaborations);
+
+                collaborations.retainAll(userLikedFilms);
+
+                if (!collaborations.isEmpty() && result.size() < collaborations.size()) {
+                    result.put(key, collaborationsCopy);
+                }
+            }
+        }
+
+        return result;
     }
 }

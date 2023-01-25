@@ -84,6 +84,20 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public Collection<Film> getAllFilms(Set<Integer> filmIds) {
+        String inSql = String.join(",", Collections.nCopies(filmIds.size(), "?"));
+        String sqlQuery = filmsSql.concat(" where f.id in (?)");
+
+        Collection<Film> films = jdbcTemplate.query(
+            String.format(sqlQuery, inSql),
+            new FilmMapper(),
+            filmIds.toArray()
+        );
+
+        return setFilmGenresAndDirectors(films);
+    }
+
+    @Override
     public Film updateFilm(Film film) {
         final String sql = "update films set name = ?, release_date = ?, description = ?, duration = ?, " +
             "rate = ? where id = ?";
@@ -143,6 +157,7 @@ public class FilmDbStorage implements FilmStorage {
 
         return setFilmGenresAndDirectors(films);
     }
+
 
     private Collection<Film> setFilmGenresAndDirectors(Collection<Film> films) {
         Map<Integer, Collection<Genre>> filmGenresMap = filmGenreStorage.getAllFilmGenres(films);
