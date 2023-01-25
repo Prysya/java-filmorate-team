@@ -90,11 +90,7 @@ public class FilmService {
             Integer key = likesEntry.getKey();
             Set<Integer> value = likesEntry.getValue();
 
-            if (key.equals(userId)) {
-                continue;
-            }
-
-            if (value.size() > collaborations.size()) {
+            if (!key.equals(userId) && value.size() > collaborations.size()) {
                 collaborations = value;
 
                 Set<Integer> collaborationsCopy = new HashSet<>(collaborations);
@@ -108,5 +104,5 @@ public class FilmService {
         }
 
         return result;
-    }
+     }
 }
